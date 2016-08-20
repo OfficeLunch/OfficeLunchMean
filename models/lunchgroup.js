@@ -13,8 +13,9 @@ var LunchGroupSchema = new Schema({
     required: true
   }],
   origin:[{
-    type: Number,
-    required: true
+    type: [Number],
+    required: true,
+    index: '2dsphere'
   }]
 });
 

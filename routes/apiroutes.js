@@ -34,28 +34,23 @@ router.post('/api/createLunchGroup', passport.authenticate('jwt',{session: false
   if(!req.body.groupname || !req.body.origin){
     res.json({success: false, msg: 'Missing Fields!'});
   }else{
-    var temp = [];
-    var i = 0;
-    while(true){
-      var request = eval("req.body.users" + i);
-      if(request){
-        temp.push(request);
-        i++;
-      }else{
-        break;
+    findUserIDs(req.body.users.slice(1,-1).split(','),function(err, ids){
+      //console.log(ids);
+      if(err) throw err;
+      if(!ids){
+        res.json({success:false, msg:'Group users not found'});
       }
-    }
-    var newGroup = new LunchGroup({
-      groupname: req.body.groupname,
-      users: temp,
-      origin: req.body['origin[]']
-    });
-    newGroup.save(function(err){
-      if(err){
-        //throw err;
-        return res.json({success: false, msg: 'Group already exists'});
-      }
-      res.json({success: true, msg: 'Group created'});
+      var newGroup = new LunchGroup({
+        groupname: req.body.groupname,
+        users: ids,
+        origin: JSON.parse(req.body.origin)
+      });
+      newGroup.save(function(err){
+        if(err){
+          return res.json({success: false, msg: 'Group already exists'});
+        }
+        res.json({success: true, msg: 'Group created'});
+      });
     });
   }
 });
@@ -113,6 +108,23 @@ getToken = function(headers){
   }else {
     return null;
   }
+}
+
+findUserIDs = function(users, callback){
+  var userIds = [];
+  User.find({username: {$in: users}}, function(err, results){
+    if(err) callback(err,null);
+    if(!results){
+      callback(null,null);//no records found
+    }
+    if(results.length < users.length){
+      callback(null,null);
+    }
+    results.forEach(function(u){
+      userIds.push(u.id);
+    });
+    callback(null, userIds);
+  });
 }
 
 module.exports = router;
